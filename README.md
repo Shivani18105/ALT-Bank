@@ -40,3 +40,6 @@ Do not commit `.env`, credentials, API keys, tokens, or real customer data.
 
 ## Git history
 The repository is intentionally organized into meaningful milestones. Each milestone should be tested before the next commit is made.
+
+## Performance evidence
+The final submission must contain real measurements for 50,000+ transactions using 1, 5, 10 and 20 workers. Results belong in `performance/results.csv`; leave values blank until actually measured.
