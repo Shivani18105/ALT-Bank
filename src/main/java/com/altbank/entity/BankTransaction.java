@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 @Entity
-@Table(name = "transaction", uniqueConstraints = @UniqueConstraint(name = "uk_transaction_id", columnNames = "transaction_id"))
+@Table(name = "bank_transaction", uniqueConstraints = @UniqueConstraint(name = "uk_transaction_id", columnNames = "transaction_id"))
 public class BankTransaction {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

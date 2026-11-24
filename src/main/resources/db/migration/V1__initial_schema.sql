@@ -14,7 +14,7 @@ CREATE TABLE account (
     currency CHAR(3) NOT NULL DEFAULT 'INR',
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-CREATE TABLE transaction (
+CREATE TABLE bank_transaction (
     id BIGSERIAL PRIMARY KEY,
     transaction_id VARCHAR(64) NOT NULL UNIQUE,
     type VARCHAR(20) NOT NULL CHECK (type IN ('DEPOSIT','WITHDRAWAL','TRANSFER')),
@@ -28,7 +28,7 @@ CREATE TABLE transaction (
 );
 CREATE TABLE transaction_audit (
     id BIGSERIAL PRIMARY KEY,
-    transaction_id VARCHAR(64) NOT NULL REFERENCES transaction(transaction_id),
+    transaction_id VARCHAR(64) NOT NULL REFERENCES bank_transaction(transaction_id),
     timestamp TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     thread_name VARCHAR(120) NOT NULL,
     operation VARCHAR(30) NOT NULL,
@@ -38,7 +38,7 @@ CREATE TABLE transaction_audit (
 );
 CREATE TABLE failed_transaction (
     id BIGSERIAL PRIMARY KEY,
-    transaction_id VARCHAR(64) NOT NULL REFERENCES transaction(transaction_id),
+    transaction_id VARCHAR(64) NOT NULL REFERENCES bank_transaction(transaction_id),
     error_category VARCHAR(80) NOT NULL,
     reason VARCHAR(500) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP

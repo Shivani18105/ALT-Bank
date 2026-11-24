@@ -28,24 +28,35 @@ public class TransactionService {
         this.accounts = accounts; this.transactions = transactions; this.audits = audits; this.failures = failures;
     }
 
-    @Transactional
     public TransactionResponse process(TransactionRequest request) {
-        Instant started = Instant.now();
-        log.info("transactionId={} thread={} operation={} result=RECEIVED", request.transactionId(),
-                Thread.currentThread().getName(), request.type());
-
         var existing = transactions.findByTransactionId(request.transactionId());
         if (existing.isPresent()) {
             log.info("transactionId={} result=DUPLICATE", request.transactionId());
             return toResponse(existing.get());
         }
+        try {
+            return processNew(request);
+        } catch (DataIntegrityViolationException ex) {
+            // A concurrent request may have won the unique transaction_id race.
+            return transactions.findByTransactionId(request.transactionId())
+                    .map(this::toResponse)
+                    .orElseThrow(() -> ex);
+        }
+    }
+
+    @Transactional
+    protected TransactionResponse processNew(TransactionRequest request) {
+        Instant started = Instant.now();
+        log.info("transactionId={} thread={} operation={} result=RECEIVED", request.transactionId(),
+                Thread.currentThread().getName(), request.type());
 
         BankTransaction tx = new BankTransaction();
         tx.setTransactionId(request.transactionId()); tx.setType(request.type()); tx.setAmount(request.amount());
         tx.setSourceAccount(request.sourceAccount()); tx.setDestinationAccount(request.destinationAccount());
+        tx.setStatus(TransactionStatus.RECEIVED);
+        transactions.saveAndFlush(tx);
         tx.setStatus(TransactionStatus.PROCESSING);
         try {
-            transactions.saveAndFlush(tx); // DB uniqueness is the second idempotency guard.
             validate(request);
             switch (request.type()) {
                 case DEPOSIT -> deposit(request);
@@ -71,10 +82,6 @@ public class TransactionService {
                     Thread.currentThread().getName(), request.type(), tx.getStatus(), ex.getMessage(),
                     Duration.between(started, Instant.now()).toMillis());
             return toResponse(tx);
-        } catch (DataIntegrityViolationException ex) {
-            var duplicate = transactions.findByTransactionId(request.transactionId());
-            if (duplicate.isPresent()) return toResponse(duplicate.get());
-            throw ex;
         }
     }
 
